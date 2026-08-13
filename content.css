@@ -1,0 +1,307 @@
+/* content.css - Premium glassmorphic styling for selection button and audio control card */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+/* Floating Button */
+#simplify-speak-floating-btn {
+  all: unset;
+  position: absolute;
+  z-index: 999999;
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 18px;
+  border-radius: 25px;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 15px rgba(110, 142, 251, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s;
+  box-sizing: border-box;
+}
+
+#simplify-speak-floating-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px rgba(110, 142, 251, 0.5);
+  filter: brightness(1.05);
+}
+
+#simplify-speak-floating-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+#simplify-speak-floating-btn .ss-btn-icon {
+  font-size: 14px;
+}
+
+/* Floating Card Container */
+#simplify-speak-card {
+  position: absolute;
+  z-index: 999999;
+  width: 350px;
+  max-height: 450px;
+  background: rgba(28, 28, 30, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  animation: ss-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.1px;
+}
+
+/* Header */
+.ss-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 16px;
+  box-sizing: border-box;
+}
+
+.ss-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(120deg, #a2a0ff, #e3a5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ss-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 50%;
+  transition: background-color 0.15s, color 0.15s;
+  box-sizing: border-box;
+}
+
+.ss-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+/* Content Area */
+.ss-content {
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+  max-height: 280px;
+  box-sizing: border-box;
+}
+
+.ss-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ss-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ss-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.ss-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ss-text-body p {
+  margin: 0 0 12px 0;
+}
+
+.ss-text-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Loading State */
+.ss-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 12px;
+  box-sizing: border-box;
+}
+
+.ss-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-top: 2px solid #5856d6;
+  border-radius: 50%;
+  animation: ss-spin 0.8s linear infinite;
+  margin-bottom: 14px;
+}
+
+.ss-loading-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Error States */
+.ss-error-message {
+  color: #ff453a;
+  padding: 12px;
+  background: rgba(255, 69, 58, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 69, 58, 0.15);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Audio Control Panel */
+.ss-controls {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.ss-control-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 8px;
+  font-size: 12px;
+  transition: background-color 0.15s, transform 0.1s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ss-control-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ss-control-btn:active {
+  transform: scale(0.92);
+}
+
+.ss-divider {
+  height: 18px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 8px;
+}
+
+.ss-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-left: 4px;
+  margin-right: 6px;
+}
+
+.ss-speed-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 11px;
+  padding: 3px 6px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.ss-speed-select:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ss-speed-select option {
+  background-color: #1c1c1e;
+  color: #ffffff;
+}
+
+/* Status Indicator */
+.ss-status-container {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ss-status-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #30d158;
+  border-radius: 50%;
+  animation: ss-pulse 1.5s infinite;
+}
+
+.ss-status-dot-paused {
+  background-color: #ff9f0a;
+  animation: none;
+}
+
+.ss-status-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+
+/* Animations */
+@keyframes ss-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ss-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ss-pulse {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.5);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(48, 209, 88, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(48, 209, 88, 0);
+  }
+}

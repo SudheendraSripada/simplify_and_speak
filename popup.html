@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Simplify & Speak Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <h1 class="popup-title">✨ Simplify & Speak</h1>
+      <p class="popup-subtitle">Customize your reading & listening experience</p>
+    </header>
+
+    <main class="popup-main">
+      <!-- AI Provider Selection -->
+      <div class="form-group">
+        <label class="form-label" for="provider-select">AI Provider</label>
+        <select id="provider-select">
+          <option value="gemini">Google Gemini</option>
+          <option value="nvidia">NVIDIA NIM</option>
+        </select>
+      </div>
+
+      <!-- Gemini Key Field -->
+      <div class="form-group" id="gemini-key-group">
+        <label class="form-label" for="api-key">Gemini API Key</label>
+        <div class="input-with-action">
+          <input type="password" id="api-key" placeholder="Enter your Gemini API key" />
+          <button type="button" id="toggle-api-key" class="icon-btn" title="Toggle Visibility">👁️</button>
+        </div>
+        <p class="form-help">
+          Don't have one? Get it for free on <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>.
+        </p>
+      </div>
+
+      <!-- NVIDIA Key Field -->
+      <div class="form-group" id="nvidia-key-group" style="display: none;">
+        <label class="form-label" for="nvidia-key">NVIDIA API Key</label>
+        <div class="input-with-action">
+          <input type="password" id="nvidia-key" placeholder="Enter your NVIDIA NIM API key" />
+          <button type="button" id="toggle-nvidia-key" class="icon-btn" title="Toggle Visibility">👁️</button>
+        </div>
+        <p class="form-help">
+          Get your NIM API key from the <a href="https://build.nvidia.com/" target="_blank">NVIDIA API Catalog</a>.
+        </p>
+      </div>
+
+      <!-- Simplification Style -->
+      <div class="form-group">
+        <label class="form-label" for="style-select">Simplification Level</label>
+        <select id="style-select">
+          <option value="standard">Standard Simple (Natural & Plain)</option>
+          <option value="eli5">Explain Like I'm 5 (Analogy-driven)</option>
+          <option value="bullets">Bullet Points (Key Summaries)</option>
+          <option value="key_takeaways">Key Takeaways (Concise Paragraph)</option>
+        </select>
+      </div>
+
+      <!-- Voice Selection -->
+      <div class="form-group">
+        <label class="form-label" for="voice-select">Speech Accent / Voice</label>
+        <select id="voice-select">
+          <option value="">Default System Voice</option>
+        </select>
+      </div>
+
+      <!-- Default Speech Rate -->
+      <div class="form-group">
+        <label class="form-label" for="rate-select">Default Speed</label>
+        <select id="rate-select">
+          <option value="0.8">0.8x (Slower)</option>
+          <option value="1.0" selected>1.0x (Normal)</option>
+          <option value="1.2">1.2x (Faster)</option>
+          <option value="1.5">1.5x (Fast)</option>
+        </select>
+      </div>
+
+      <!-- Feedback Banner -->
+      <div id="status-message" class="status-banner"></div>
+    </main>
+
+    <footer class="popup-footer">
+      <button id="test-voice-btn" class="btn secondary-btn">Test Voice</button>
+      <button id="save-btn" class="btn primary-btn">Save Settings</button>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
