@@ -1,12 +1,15 @@
-// content.js - Handles page selection, floating button, card overlay, and robust sentence TTS controls
+// content.js - Selection button, card overlay, sentence tracker, follow-up chat, export, and platform auto-injectors
 
 let floatingBtn = null;
 let card = null;
+let currentOriginalText = "";
 let currentSimplifiedText = "";
 let playbackState = "stopped"; // "speaking", "paused", "stopped", "loading"
 
 let sentences = [];
 let currentSentenceIndex = 0;
+let chatHistory = [];
+let isFallbackActive = false;
 
 // Listen for messages from background script about TTS events
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -16,27 +19,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       speakNextSentence();
     }
   } else if (request.action === "sentence_stopped") {
-    // Sentence finished speaking due to interruption or error
+    // Current sentence stopped/interrupted
   }
 });
 
 // Track mouseup to check selection and show floating button
 document.addEventListener("mouseup", function(event) {
-  // If clicking inside the active card or floating button, do nothing
   if (card && card.contains(event.target)) return;
   if (floatingBtn && floatingBtn.contains(event.target)) return;
 
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
 
-  // Remove existing floating button if clicking elsewhere
   if (floatingBtn && selectedText.length === 0) {
     removeFloatingBtn();
   }
 
-  // If text is selected and it is outside our overlay card
   if (selectedText.length > 0) {
-    // Check if range starts/ends inside the card
     try {
       const range = selection.getRangeAt(0);
       if (card && (card.contains(range.startContainer) || card.contains(range.endContainer))) {
@@ -44,7 +43,6 @@ document.addEventListener("mouseup", function(event) {
       }
     } catch (e) {}
 
-    // Show floating button
     showFloatingButton(event);
   }
 });
@@ -54,8 +52,7 @@ document.addEventListener("mousedown", function(event) {
   if (floatingBtn && !floatingBtn.contains(event.target)) {
     removeFloatingBtn();
   }
-  if (card && !card.contains(event.target) && event.target.id !== "simplify-speak-floating-btn") {
-    // If the user clicks outside, stop audio and remove card
+  if (card && !card.contains(event.target) && event.target.id !== "simplify-speak-floating-btn" && !event.target.closest(".ss-inline-btn")) {
     stopAudio();
     removeCard();
   }
@@ -68,24 +65,19 @@ function showFloatingButton(event) {
   floatingBtn.id = "simplify-speak-floating-btn";
   floatingBtn.innerHTML = `<span class="ss-btn-icon">🔊</span> Simplify & Speak`;
 
-  // Get selection bounding box for precise positioning
   try {
     const selection = window.getSelection();
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    
-    // Position button slightly below selection bounding rect
     floatingBtn.style.top = (rect.bottom + window.scrollY + 10) + "px";
     floatingBtn.style.left = Math.max(10, Math.min(window.innerWidth - 180, rect.left + window.scrollX)) + "px";
   } catch (e) {
-    // Fallback to mouse coordinates if range bounding rect fails
     floatingBtn.style.top = (event.pageY + 15) + "px";
     floatingBtn.style.left = Math.max(10, event.pageX) + "px";
   }
 
   document.body.appendChild(floatingBtn);
 
-  // Trigger simplify action on click
   floatingBtn.addEventListener("click", function(e) {
     e.stopPropagation();
     const selectionText = window.getSelection().toString().trim();
@@ -103,28 +95,49 @@ function removeFloatingBtn() {
   }
 }
 
-function showCard(originalText) {
+function showCard(originalText, targetElement = null) {
   removeCard();
+  currentOriginalText = originalText;
+  chatHistory = [];
 
   card = document.createElement("div");
   card.id = "simplify-speak-card";
 
-  // Position card near where selection was
-  try {
-    const selection = window.getSelection();
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    card.style.top = (rect.bottom + window.scrollY + 12) + "px";
+  // Check Accessibility font settings
+  chrome.storage.local.get(["dyslexiaFont"], (data) => {
+    if (data.dyslexiaFont) {
+      card.classList.add("ss-dyslexic-font");
+    }
+  });
+
+  if (targetElement) {
+    const rect = targetElement.getBoundingClientRect();
+    card.style.top = (rect.bottom + window.scrollY + 10) + "px";
     card.style.left = Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX)) + "px";
-  } catch (e) {
-    card.style.top = (window.scrollY + 100) + "px";
-    card.style.left = "20px";
+  } else {
+    try {
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      card.style.top = (rect.bottom + window.scrollY + 12) + "px";
+      card.style.left = Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX)) + "px";
+    } catch (e) {
+      card.style.top = (window.scrollY + 100) + "px";
+      card.style.left = "20px";
+    }
   }
 
   card.innerHTML = `
     <div class="ss-header">
-      <span class="ss-title">✨ Simplify & Speak</span>
-      <button class="ss-close-btn" id="ss-close-btn" title="Close">&times;</button>
+      <div class="ss-header-left">
+        <span class="ss-title">✨ Simplify & Speak</span>
+        <span class="ss-badge" id="ss-badge" style="display:none;">Free Local AI</span>
+      </div>
+      <div class="ss-header-actions">
+        <button class="ss-icon-btn" id="ss-copy-btn" title="Copy to Clipboard">📋</button>
+        <button class="ss-icon-btn" id="ss-export-btn" title="Export Transcript (.txt)">📥</button>
+        <button class="ss-close-btn" id="ss-close-btn" title="Close">&times;</button>
+      </div>
     </div>
     <div class="ss-content" id="ss-content">
       <div class="ss-loader">
@@ -148,51 +161,82 @@ function showCard(originalText) {
         <span class="ss-status-text" id="ss-status-text">Speaking</span>
       </div>
     </div>
+    <!-- Follow-up Mini Chat -->
+    <div class="ss-chat-section" id="ss-chat-section" style="display:none;">
+      <div class="ss-chat-history" id="ss-chat-history"></div>
+      <div class="ss-chat-input-bar">
+        <input type="text" id="ss-chat-input" placeholder="Ask a follow-up question..." />
+        <button id="ss-chat-send" title="Send Question">➤</button>
+      </div>
+    </div>
   `;
 
   document.body.appendChild(card);
 
-  // Setup close listener
+  // Setup header tool listeners
   document.getElementById("ss-close-btn").addEventListener("click", () => {
     stopAudio();
     removeCard();
   });
 
-  // Call background to simplify text
+  document.getElementById("ss-copy-btn").addEventListener("click", () => {
+    if (currentSimplifiedText) {
+      navigator.clipboard.writeText(currentSimplifiedText).then(() => {
+        const copyBtn = document.getElementById("ss-copy-btn");
+        copyBtn.innerText = "✅";
+        setTimeout(() => { copyBtn.innerText = "📋"; }, 2000);
+      });
+    }
+  });
+
+  document.getElementById("ss-export-btn").addEventListener("click", () => {
+    if (currentSimplifiedText) {
+      const fullTranscript = `SIMPLIFY & SPEAK TRANSCRIPT\n\nORIGINAL TEXT:\n${currentOriginalText}\n\nSIMPLIFIED SUMMARY:\n${currentSimplifiedText}\n\nFOLLOW-UP Q&A:\n${chatHistory.map(h => `${h.role.toUpperCase()}: ${h.content}`).join('\n')}`;
+      const blob = new Blob([fullTranscript], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `simplified-summary-${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
+
+  // Call background to simplify
   playbackState = "loading";
   chrome.runtime.sendMessage({ action: "simplify", text: originalText }, function(response) {
-    if (!card) return; // User closed card before response
+    if (!card) return;
 
     const contentDiv = document.getElementById("ss-content");
 
     if (response && response.error) {
       playbackState = "stopped";
-      if (response.error === "API_KEY_MISSING") {
-        contentDiv.innerHTML = `
-          <div class="ss-error-message">
-            <strong>API Key Missing</strong><br>
-            Please set your Gemini or NVIDIA API key in the extension popup to use this tool.
-          </div>
-        `;
-      } else {
-        contentDiv.innerHTML = `
-          <div class="ss-error-message">
-            <strong>Simplification Failed</strong><br>
-            ${response.error}
-          </div>
-        `;
-      }
+      contentDiv.innerHTML = `
+        <div class="ss-error-message">
+          <strong>Simplification Failed</strong><br>
+          ${response.error}
+        </div>
+      `;
       return;
     }
 
     if (response && response.simplifiedText) {
       currentSimplifiedText = response.simplifiedText;
-      contentDiv.innerHTML = `<div class="ss-text-body">${formatText(currentSimplifiedText)}</div>`;
-      
-      // Setup controls
+      isFallbackActive = !!response.isFallback;
+
+      if (isFallbackActive) {
+        const badge = document.getElementById("ss-badge");
+        if (badge) badge.style.display = "inline-block";
+      }
+
+      // Check Bionic Reading mode
+      chrome.storage.local.get(["bionicReading"], (data) => {
+        const useBionic = !!data.bionicReading;
+        renderSentences(currentSimplifiedText, useBionic);
+      });
+
       setupControls();
-      
-      // Start speaking automatically
+      setupChat();
       speakText(currentSimplifiedText);
     } else {
       playbackState = "stopped";
@@ -201,24 +245,49 @@ function showCard(originalText) {
   });
 }
 
+function renderSentences(text, useBionic = false) {
+  const contentDiv = document.getElementById("ss-content");
+  sentences = text.split(/(?<=[.!?])\s+(?=[a-zA-Z0-9])/g).filter(s => s.trim().length > 0);
+  
+  let html = "";
+  sentences.forEach((sentence, idx) => {
+    const formatted = useBionic ? applyBionic(sentence) : sentence;
+    html += `<span class="ss-sentence-span" id="ss-s-${idx}">${formatted} </span>`;
+  });
+
+  contentDiv.innerHTML = `<div class="ss-text-body">${html}</div>`;
+}
+
+function applyBionic(text) {
+  return text.replace(/\b([a-zA-Z]{2,})\b/g, (match) => {
+    const mid = Math.ceil(match.length / 2);
+    return `<b class="ss-bionic-bold">${match.slice(0, mid)}</b>${match.slice(mid)}`;
+  });
+}
+
+function highlightActiveSentence(index) {
+  if (!card) return;
+  const allSpans = card.querySelectorAll(".ss-sentence-span");
+  allSpans.forEach(span => span.classList.remove("ss-sentence-active"));
+
+  const activeSpan = document.getElementById(`ss-s-${index}`);
+  if (activeSpan) {
+    activeSpan.classList.add("ss-sentence-active");
+    activeSpan.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
 function removeCard() {
   if (card) {
     card.remove();
     card = null;
+    currentOriginalText = "";
     currentSimplifiedText = "";
     playbackState = "stopped";
     sentences = [];
     currentSentenceIndex = 0;
+    chatHistory = [];
   }
-}
-
-// ponytail: naive regex markdown parser, replace with marked.js if complex formatting (like tables) is required
-function formatText(text) {
-  // Convert basic double newlines to paragraphs and clean up trailing spaces/asterisks
-  return text
-    .split("\n\n")
-    .map(para => `<p>${para.replace(/\*\*/g, "").replace(/^\* /gm, "• ").replace(/\n/g, "<br>")}</p>`)
-    .join("");
 }
 
 function setupControls() {
@@ -228,10 +297,7 @@ function setupControls() {
   const playPauseBtn = document.getElementById("ss-play-pause-btn");
   const stopBtn = document.getElementById("ss-stop-btn");
   const speedSelect = document.getElementById("ss-speed-select");
-  const statusText = document.getElementById("ss-status-text");
-  const statusDot = card.querySelector(".ss-status-dot");
 
-  // Load configured rate from storage to pre-select
   chrome.storage.local.get(["ttsRate"], function(data) {
     if (data.ttsRate) {
       speedSelect.value = data.ttsRate;
@@ -240,24 +306,15 @@ function setupControls() {
 
   playPauseBtn.addEventListener("click", () => {
     if (playbackState === "speaking") {
-      // Pause - Send stop to background to silence speech immediately, but keep index position
       chrome.runtime.sendMessage({ action: "stop" }, () => {
         playbackState = "paused";
-        playPauseBtn.innerHTML = "▶";
-        playPauseBtn.title = "Play";
-        statusText.innerText = "Paused";
-        statusDot.classList.add("ss-status-dot-paused");
+        updateUIForStopped(true);
       });
     } else if (playbackState === "paused") {
-      // Resume - continue speaking from current sentence index
       playbackState = "speaking";
-      playPauseBtn.innerHTML = "⏸";
-      playPauseBtn.title = "Pause";
-      statusText.innerText = "Speaking";
-      statusDot.classList.remove("ss-status-dot-paused");
+      updateUIForSpeaking();
       speakNextSentence();
     } else if (playbackState === "stopped") {
-      // Play again from start
       speakText(currentSimplifiedText);
     }
   });
@@ -269,7 +326,6 @@ function setupControls() {
   speedSelect.addEventListener("change", () => {
     const rate = speedSelect.value;
     chrome.storage.local.set({ ttsRate: rate }, () => {
-      // If we are currently speaking, stop and restart from current sentence index to apply speed
       if (playbackState === "speaking") {
         chrome.runtime.sendMessage({ action: "stop" }, () => {
           speakNextSentence();
@@ -279,9 +335,60 @@ function setupControls() {
   });
 }
 
+function setupChat() {
+  const chatSection = document.getElementById("ss-chat-section");
+  const chatInput = document.getElementById("ss-chat-input");
+  const chatSend = document.getElementById("ss-chat-send");
+  const chatHistoryDiv = document.getElementById("ss-chat-history");
+
+  chatSection.style.display = "flex";
+
+  const handleSend = () => {
+    const question = chatInput.value.trim();
+    if (!question) return;
+
+    chatInput.value = "";
+    
+    // Render user message
+    const userMsg = document.createElement("div");
+    userMsg.className = "ss-chat-bubble ss-chat-user";
+    userMsg.innerText = question;
+    chatHistoryDiv.appendChild(userMsg);
+    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+
+    chatHistory.push({ role: "user", content: question });
+
+    // Render loading bubble
+    const aiMsg = document.createElement("div");
+    aiMsg.className = "ss-chat-bubble ss-chat-ai ss-chat-loading";
+    aiMsg.innerText = "Thinking...";
+    chatHistoryDiv.appendChild(aiMsg);
+    chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+
+    chrome.runtime.sendMessage({
+      action: "chat",
+      message: question,
+      history: chatHistory.slice(0, -1),
+      context: currentSimplifiedText
+    }, (res) => {
+      aiMsg.classList.remove("ss-chat-loading");
+      const answer = res?.reply || "No answer received.";
+      aiMsg.innerText = answer;
+      chatHistory.push({ role: "assistant", content: answer });
+      chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+
+      // Read reply aloud
+      speakText(answer);
+    });
+  };
+
+  chatSend.addEventListener("click", handleSend);
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleSend();
+  });
+}
+
 function speakText(text) {
-  // Split simplified text into sentences based on standard punctuation
-  // Avoids splitting on decimals (e.g. 1.5) by validating characters
   sentences = text.split(/(?<=[.!?])\s+(?=[a-zA-Z0-9])/g).filter(s => s.trim().length > 0);
   currentSentenceIndex = 0;
   
@@ -298,10 +405,13 @@ function speakNextSentence() {
   if (currentSentenceIndex >= sentences.length) {
     playbackState = "stopped";
     updateUIForStopped();
+    highlightActiveSentence(-1);
     return;
   }
   
   const sentence = sentences[currentSentenceIndex].trim();
+  highlightActiveSentence(currentSentenceIndex);
+
   if (sentence.length > 0) {
     chrome.runtime.sendMessage({ action: "speak", text: sentence });
   } else {
@@ -316,6 +426,7 @@ function stopAudio() {
     playbackState = "stopped";
     currentSentenceIndex = 0;
     updateUIForStopped();
+    highlightActiveSentence(-1);
   }
 }
 
@@ -336,7 +447,7 @@ function updateUIForSpeaking() {
   }
 }
 
-function updateUIForStopped() {
+function updateUIForStopped(isPaused = false) {
   const playPauseBtn = document.getElementById("ss-play-pause-btn");
   const statusText = document.getElementById("ss-status-text");
   const statusDot = card?.querySelector(".ss-status-dot");
@@ -346,9 +457,104 @@ function updateUIForStopped() {
     playPauseBtn.title = "Play";
   }
   if (statusText) {
-    statusText.innerText = "Stopped";
+    statusText.innerText = isPaused ? "Paused" : "Stopped";
   }
   if (statusDot) {
     statusDot.classList.add("ss-status-dot-paused");
   }
 }
+
+// ----------------------------------------------------
+// Platform Auto-Injectors (ChatGPT, Gemini, Claude, Reddit)
+// ----------------------------------------------------
+function initPlatformInjectors() {
+  chrome.storage.local.get(["enableAutoInject"], (data) => {
+    if (data.enableAutoInject === false) return; // disabled by user
+
+    const hostname = window.location.hostname;
+
+    if (hostname.includes("chatgpt.com") || hostname.includes("openai.com")) {
+      injectChatGPT();
+    } else if (hostname.includes("gemini.google.com")) {
+      injectGemini();
+    } else if (hostname.includes("claude.ai")) {
+      injectClaude();
+    } else if (hostname.includes("reddit.com")) {
+      injectReddit();
+    }
+  });
+}
+
+function injectChatGPT() {
+  const observer = new MutationObserver(() => {
+    const assistants = document.querySelectorAll('article div[data-message-author-role="assistant"]');
+    assistants.forEach(node => {
+      if (node.querySelector(".ss-inline-btn")) return;
+      const btn = createInlineBtn(() => {
+        const text = node.innerText.trim();
+        if (text) showCard(text, btn);
+      });
+      node.parentElement?.appendChild(btn);
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function injectGemini() {
+  const observer = new MutationObserver(() => {
+    const responses = document.querySelectorAll('.model-response-text, message-content');
+    responses.forEach(node => {
+      if (node.querySelector(".ss-inline-btn")) return;
+      const btn = createInlineBtn(() => {
+        const text = node.innerText.trim();
+        if (text) showCard(text, btn);
+      });
+      node.appendChild(btn);
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function injectClaude() {
+  const observer = new MutationObserver(() => {
+    const messages = document.querySelectorAll('.font-claude-message');
+    messages.forEach(node => {
+      if (node.querySelector(".ss-inline-btn")) return;
+      const btn = createInlineBtn(() => {
+        const text = node.innerText.trim();
+        if (text) showCard(text, btn);
+      });
+      node.appendChild(btn);
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function injectReddit() {
+  const observer = new MutationObserver(() => {
+    const comments = document.querySelectorAll('shreddit-comment, div[data-testid="comment"]');
+    comments.forEach(node => {
+      if (node.querySelector(".ss-inline-btn")) return;
+      const btn = createInlineBtn(() => {
+        const text = node.innerText.trim();
+        if (text) showCard(text, btn);
+      });
+      node.appendChild(btn);
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function createInlineBtn(onClick) {
+  const btn = document.createElement("button");
+  btn.className = "ss-inline-btn";
+  btn.innerHTML = `<span>✨ Simplify & Listen</span>`;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onClick();
+  });
+  return btn;
+}
+
+// Initialize platform injectors on load
+initPlatformInjectors();

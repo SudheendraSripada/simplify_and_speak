@@ -9,7 +9,7 @@
   <div class="popup-container">
     <header class="popup-header">
       <h1 class="popup-title">✨ Simplify & Speak</h1>
-      <p class="popup-subtitle">Customize your reading & listening experience</p>
+      <p class="popup-subtitle">Customize reading, voice & accessibility</p>
     </header>
 
     <main class="popup-main">
@@ -24,25 +24,25 @@
 
       <!-- Gemini Key Field -->
       <div class="form-group" id="gemini-key-group">
-        <label class="form-label" for="api-key">Gemini API Key</label>
+        <label class="form-label" for="api-key">Gemini API Key (Optional)</label>
         <div class="input-with-action">
-          <input type="password" id="api-key" placeholder="Enter your Gemini API key" />
+          <input type="password" id="api-key" placeholder="Leave empty for Free Local AI" />
           <button type="button" id="toggle-api-key" class="icon-btn" title="Toggle Visibility">👁️</button>
         </div>
         <p class="form-help">
-          Don't have one? Get it for free on <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>.
+          Free keys at <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>. (Empty = Local Fallback)
         </p>
       </div>
 
       <!-- NVIDIA Key Field -->
       <div class="form-group" id="nvidia-key-group" style="display: none;">
-        <label class="form-label" for="nvidia-key">NVIDIA API Key</label>
+        <label class="form-label" for="nvidia-key">NVIDIA API Key (Optional)</label>
         <div class="input-with-action">
-          <input type="password" id="nvidia-key" placeholder="Enter your NVIDIA NIM API key" />
+          <input type="password" id="nvidia-key" placeholder="Leave empty for Free Local AI" />
           <button type="button" id="toggle-nvidia-key" class="icon-btn" title="Toggle Visibility">👁️</button>
         </div>
         <p class="form-help">
-          Get your NIM API key from the <a href="https://build.nvidia.com/" target="_blank">NVIDIA API Catalog</a>.
+          Free keys at <a href="https://build.nvidia.com/" target="_blank">NVIDIA API Catalog</a>. (Empty = Local Fallback)
         </p>
       </div>
 
@@ -74,6 +74,22 @@
           <option value="1.2">1.2x (Faster)</option>
           <option value="1.5">1.5x (Fast)</option>
         </select>
+      </div>
+
+      <!-- Accessibility & Features Section -->
+      <div class="feature-toggles">
+        <label class="checkbox-label">
+          <input type="checkbox" id="bionic-toggle" />
+          <span>🧠 Bionic Reading (Fast Scan)</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="dyslexia-toggle" />
+          <span>📖 Dyslexia-Friendly Font</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="autoinject-toggle" checked />
+          <span>🤖 Platform Auto-Buttons (ChatGPT/Gemini)</span>
+        </label>
       </div>
 
       <!-- Feedback Banner -->

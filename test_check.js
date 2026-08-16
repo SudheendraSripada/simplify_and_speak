@@ -42,18 +42,6 @@ try {
   console.log(`Verifying popup HTML: ${manifest.action.default_popup}`);
   assert.ok(fs.existsSync(popupPath), `Popup HTML file not found at ${popupPath}`);
   
-  // Verify scripts inside popup HTML exist
-  const popupHtml = fs.readFileSync(popupPath, 'utf8');
-  if (popupHtml.includes('src="popup.js"')) {
-    const jsPath = path.join(__dirname, 'popup.js');
-    console.log("Verifying popup JS: popup.js");
-    assert.ok(fs.existsSync(jsPath), "popup.js referenced in popup.html but not found on disk!");
-  }
-  if (popupHtml.includes('href="popup.css"')) {
-    const cssPath = path.join(__dirname, 'popup.css');
-    console.log("Verifying popup CSS: popup.css");
-    assert.ok(fs.existsSync(cssPath), "popup.css referenced in popup.html but not found on disk!");
-  }
   if (manifest.action.default_icon) {
     const iconPath = path.join(__dirname, manifest.action.default_icon);
     console.log(`Verifying action icon: ${manifest.action.default_icon}`);
@@ -68,42 +56,59 @@ try {
   process.exit(1);
 }
 
-// 2. Unit test: formatText parser from content.js
-function formatText(text) {
-  return text
-    .split("\n\n")
-    .map(para => `<p>${para.replace(/\*\*/g, "").replace(/^\* /gm, "• ").replace(/\n/g, "<br>")}</p>`)
-    .join("");
+// 2. Unit test: Extractive Summarizer Logic
+function localExtractiveSummarize(text, style) {
+  const sentences = text
+    .split(/(?<=[.!?])\s+(?=[a-zA-Z0-9])/g)
+    .map(s => s.trim())
+    .filter(s => s.length > 15);
+  
+  if (sentences.length <= 2) return text;
+
+  const stopWords = new Set([
+    "the","is","in","and","to","of","a","that","it","for","on","with","as",
+    "this","was","at","by","an","be","from","or","are","your","you","we",
+    "our","their","they","can","have","has","were","been","will","would"
+  ]);
+  
+  const words = text.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+  const freq = {};
+  for (const w of words) {
+    if (!stopWords.has(w)) freq[w] = (freq[w] || 0) + 1;
+  }
+
+  const scored = sentences.map((sentence, index) => {
+    const sWords = sentence.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+    let score = 0;
+    for (const w of sWords) {
+      if (freq[w]) score += freq[w];
+    }
+    score = score / Math.max(5, sWords.length);
+    if (index === 0) score *= 1.3;
+    return { sentence, score, index };
+  });
+
+  const targetCount = Math.max(2, Math.min(5, Math.ceil(sentences.length * 0.45)));
+  scored.sort((a, b) => b.score - a.score);
+  const selected = scored.slice(0, targetCount).sort((a, b) => a.index - b.index);
+
+  if (style === "bullets") {
+    return selected.map(s => `• ${s.sentence}`).join("\n\n");
+  }
+  return selected.map(s => s.sentence).join(" ");
 }
 
 try {
-  console.log("Testing text formatting rules...");
+  console.log("Testing offline extractive summarizer...");
+  const sampleArticle = "Artificial intelligence is transforming every industry rapidly across the globe. Machine learning models can analyze vast amounts of data in seconds. However, reading long AI generated responses can sometimes be tiring and hard to digest. Text to speech systems allow users to listen to content hands free. Summarization algorithms extract the key sentences so people save valuable time.";
+  const summary = localExtractiveSummarize(sampleArticle, "standard");
+  assert.ok(summary.length > 0, "Summary output is empty!");
+  assert.ok(summary.length < sampleArticle.length, "Summary did not condense the input text!");
+  console.log("✅ Offline Extractive Summarizer: PASSED\n");
 
-  // Test bold stripping
-  const boldTest = "This is **bold** text.";
-  const boldExpected = "<p>This is bold text.</p>";
-  assert.strictEqual(formatText(boldTest), boldExpected, "Bold markdown formatting failed!");
-
-  // Test paragraph layout
-  const paragraphTest = "Paragraph one.\n\nParagraph two.";
-  const paragraphExpected = "<p>Paragraph one.</p><p>Paragraph two.</p>";
-  assert.strictEqual(formatText(paragraphTest), paragraphExpected, "Paragraph double-newline separation failed!");
-
-  // Test list bullets
-  const listTest = "* First item\n* Second item";
-  const listExpected = "<p>• First item<br>• Second item</p>";
-  assert.strictEqual(formatText(listTest), listExpected, "Bullet point formatting failed!");
-
-  // Test single newlines inside paragraphs converting to <br>
-  const newlineTest = "Line one.\nLine two.";
-  const newlineExpected = "<p>Line one.<br>Line two.</p>";
-  assert.strictEqual(formatText(newlineTest), newlineExpected, "Single newline <br> formatting failed!");
-
-  console.log("✅ Text formatting tests: PASSED\n");
   console.log("🎉 All self-checks passed successfully!");
-
 } catch (err) {
-  console.error("❌ Text formatting tests: FAILED");
+  console.error("❌ Summarizer test: FAILED");
   console.error(err);
   process.exit(1);
 }

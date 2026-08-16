@@ -1,72 +1,41 @@
-# Simplify & Speak Chrome Extension
+# Simplify & Speak: AI Reading & Voice Assistant
 
-**Simplify & Speak** is a premium, lightweight Google Chrome Extension designed for people who find reading long, complex AI-generated text tiring. It allows you to select text on any website, simplify it using Gemini AI or NVIDIA NIM models, and read it aloud with Chrome's native offline Text-to-Speech (TTS) engine.
-
-It is designed to be resilient, so small network glitches will not interrupt your playback, and features a Sider-AI style player with a gorgeous glassmorphism UI.
+**Simplify & Speak** is a Google Chrome Extension designed for people who find reading long AI-generated text tiring. It allows you to select text on any website, simplify it using Gemini AI, NVIDIA NIM, or a zero-setup offline fallback model, and read it aloud with Chrome's native offline Text-to-Speech (TTS) engine.
 
 ---
 
 ## ✨ Features
 
-- **Dual AI Provider Support**: Choose between **Google Gemini** (`gemini-3.6-flash`) and **NVIDIA NIM** (`meta/llama-3.1-8b-instruct`) for content simplification.
-- **Robust Audio Controls**: Sentence-by-sentence streaming queue that guarantees **Pause**, **Resume**, and **Stop** features work perfectly on all platforms.
-- **Smart Voice Defaults**: Automatically lists available system voices and defaults to **Microsoft Ravi - English (India)** (if available on your device) to ensure clear English narration.
-- **Micro-Animations & Glassmorphism**: High-quality floating selection button with blue-to-purple gradient glow effects, smooth card transitions, and active playback badges.
-- **Complete Client-Side Storage**: API Keys and configurations are stored securely inside your browser local storage (`chrome.storage.local`).
+- **Zero-Setup Offline Fallback**: Works immediately out-of-the-box! If no API key is provided, an on-device extractive summarizer condenses the text without errors.
+- **Dual Cloud AI Support**: Seamlessly connect **Google Gemini** (`gemini-3.6-flash`) or **NVIDIA NIM** (`meta/llama-3.1-8b-instruct`) for deep conversational simplification.
+- **Interactive Follow-Up Mini-Chat**: Ask follow-up questions directly inside the floating card (e.g. *"Explain point 2 in more detail"* or *"Translate this to Spanish"*) and listen to the reply.
+- **Real-Time Visual Sentence Tracking**: Highlights the active sentence with a soft glowing background as the voice reads, scrolling automatically for smooth reading.
+- **One-Click Inline Platform Injectors**: Automatically injects a discrete `✨ Simplify & Listen` button next to AI responses on **ChatGPT**, **Gemini**, **Claude**, and **Reddit**.
+- **Accessibility & Bionic Reading**:
+  - **Bionic Reading Mode**: Bolds the first half of words for rapid scanning.
+  - **Dyslexia-Friendly Font**: High-legibility font option for easy reading.
+- **Quick Export & Copy**: One-click copy and instant `.txt` transcript download including original text, summary, and Q&A history.
+- **Robust Audio Controls**: Sentence-by-sentence streaming queue that guarantees **Pause**, **Resume**, and **Stop** features work reliably across all operating systems.
+- **Free High-Quality Voices**: Defaults to natural voices like **Microsoft Neerja / Ravi (India)** or Google natural models.
 
 ---
 
 ## 📁 File Structure
 
-- `manifest.json`: Configuration settings and permissions (`storage`, `tts`) for the extension.
-- `background.js`: Background script handling fetch requests to Gemini/NVIDIA API endpoints and executing native TTS commands.
-- `content.js` / `content.css`: Client-side logic for rendering selection buttons, cards, and coordinates mapping.
-- `popup.html` / `popup.js` / `popup.css`: User settings interface for managing credentials and default narration speech options.
-- `icon.svg`: High-resolution vector icon logo.
-- `test_check.js`: Integration self-checks for verification.
+- `manifest.json`: Manifest V3 configuration with permissions (`storage`, `tts`).
+- `background.js`: Background service worker handling cloud API calls (Gemini/NVIDIA), offline fallback extractive summarizer, and chat completions.
+- `content.js` / `content.css`: Client-side floating card, real-time sentence highlight tracker, mini-chat interface, and platform auto-injectors.
+- `popup.html` / `popup.js` / `popup.css`: Extension control dashboard with API keys, voice selection, Bionic reading, and Dyslexia toggles.
+- `icon.svg`: High-resolution vector logo.
+- `mobile_app/`: Cross-platform Flutter mobile application source code.
+- `test_check.js`: Integration and algorithm self-check tests.
 
 ---
 
-## 🚀 How to Install (Load Unpacked)
+## 🚀 How to Install in Chrome
 
-Since this extension is open-source and free, you can load it directly without using the Chrome Web Store:
-
-1. **Download the Repository**:
-   - Clone this repository:
-     ```bash
-     git clone https://github.com/SudheendraSripada/simplify_and_speak.git
-     ```
-   - Alternatively, download it as a **ZIP** file from GitHub and extract the folder.
-2. **Open Extensions Page**:
-   - Open your Chrome browser, type `chrome://extensions/` in the URL bar, and press Enter.
-3. **Turn on Developer Mode**:
-   - Toggle the **Developer mode** switch in the top-right corner to **ON**.
-4. **Load the Folder**:
-   - Click the **Load unpacked** button in the top-left corner.
-   - Select the folder containing these files.
-
----
-
-## ⚙️ Configuration & Usage
-
-1. Click the puzzle icon (Extensions) in Chrome and select **Simplify & Speak** (pin it for easy access).
-2. Choose your **AI Provider** (Google Gemini or NVIDIA NIM) and enter your corresponding API Key:
-   - [Get Gemini Key (Free) on Google AI Studio](https://aistudio.google.com/)
-   - [Get NVIDIA Key on NVIDIA Build API Catalog](https://build.nvidia.com/)
-3. Select your **Simplification Level**:
-   - *Standard Simple* (natural plain text)
-   - *ELI5* (analogies for simple comprehension)
-   - *Bullet Points* (concise list summaries)
-   - *Key Takeaways* (summarized paragraph)
-4. Select your preferred voice (defaults to **Microsoft Ravi** if found on your system) and speech speed.
-5. Click **Test Voice** to verify audio output, then click **Save Settings**.
-6. Select any text on a webpage, click the floating **🔊 Simplify & Speak** button, and enjoy the simplified audio read!
-
----
-
-## 🧪 Developer Tests
-
-To verify file dependencies and parser functions:
-```bash
-node test_check.js
-```
+1. Clone or download this repository as a ZIP.
+2. Open Chrome and go to `chrome://extensions/`.
+3. Enable **Developer mode** in the top-right corner.
+4. Click **Load unpacked** and select this directory.
+5. Highlight any text on any website, click the floating **🔊 Simplify & Speak** button, and enjoy!

@@ -1,4 +1,4 @@
-// popup.js - Saves settings and tests native voice selection with NVIDIA API NIM support
+// popup.js - Saves settings and tests native voice selection with NVIDIA API NIM support and accessibility toggles
 
 document.addEventListener("DOMContentLoaded", () => {
   const providerSelect = document.getElementById("provider-select");
@@ -14,6 +14,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const styleSelect = document.getElementById("style-select");
   const voiceSelect = document.getElementById("voice-select");
   const rateSelect = document.getElementById("rate-select");
+  
+  const bionicToggle = document.getElementById("bionic-toggle");
+  const dyslexiaToggle = document.getElementById("dyslexia-toggle");
+  const autoinjectToggle = document.getElementById("autoinject-toggle");
+
   const saveBtn = document.getElementById("save-btn");
   const testBtn = document.getElementById("test-voice-btn");
   const statusMsg = document.getElementById("status-message");
@@ -56,7 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.tts.getVoices((voices) => {
       voiceSelect.innerHTML = '<option value="">Default System Voice</option>';
       
-      // Sort voices: English first, then others
       const enVoices = voices.filter(v => v.lang && v.lang.startsWith("en"));
       const otherVoices = voices.filter(v => !v.lang || !v.lang.startsWith("en"));
       const sortedVoices = [...enVoices, ...otherVoices];
@@ -68,7 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
         voiceSelect.appendChild(option);
       });
 
-      // Load saved settings once voices are populated
       loadSettings(voices);
     });
   }
@@ -81,7 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
       "nvidiaApiKey",
       "simplificationStyle",
       "ttsVoice",
-      "ttsRate"
+      "ttsRate",
+      "bionicReading",
+      "dyslexiaFont",
+      "enableAutoInject"
     ], (data) => {
       if (data.apiProvider) {
         providerSelect.value = data.apiProvider;
@@ -93,11 +99,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.simplificationStyle) styleSelect.value = data.simplificationStyle;
       if (data.ttsRate) rateSelect.value = data.ttsRate;
 
-      // Handle voice selection fallback (e.g. default to Microsoft Ravi if it exists on system and no voice is saved)
+      if (data.bionicReading !== undefined) bionicToggle.checked = data.bionicReading;
+      if (data.dyslexiaFont !== undefined) dyslexiaToggle.checked = data.dyslexiaFont;
+      if (data.enableAutoInject !== undefined) autoinjectToggle.checked = data.enableAutoInject;
+
       if (data.ttsVoice) {
         voiceSelect.value = data.ttsVoice;
       } else {
-        // Look for a voice name that contains "Ravi"
         const raviVoice = voices.find(v => v.voiceName.toLowerCase().includes("ravi"));
         if (raviVoice) {
           voiceSelect.value = raviVoice.voiceName;
@@ -116,13 +124,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const voice = voiceSelect.value;
     const rate = rateSelect.value;
 
+    const bionic = bionicToggle.checked;
+    const dyslexia = dyslexiaToggle.checked;
+    const autoInject = autoinjectToggle.checked;
+
     chrome.storage.local.set({
       apiProvider: provider,
       apiKey: apiKey,
       nvidiaApiKey: nvidiaApiKey,
       simplificationStyle: style,
       ttsVoice: voice,
-      ttsRate: rate
+      ttsRate: rate,
+      bionicReading: bionic,
+      dyslexiaFont: dyslexia,
+      enableAutoInject: autoInject
     }, () => {
       showStatus("Settings saved successfully!", "success");
     });
