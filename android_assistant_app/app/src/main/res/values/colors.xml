@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#6E8EFB</color>
+    <color name="secondary">#A777E3</color>
+    <color name="background">#121214</color>
+    <color name="surface">#1C1C1E</color>
+    <color name="surface_translucent">#E61C1C1E</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8E8E93</color>
+    <color name="accent_green">#30D158</color>
+    <color name="accent_orange">#FF9F0A</color>
+</resources>

@@ -1,0 +1,55 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build APKs with Gradle
+        run: |
+          cd android_assistant_app
+          gradle wrapper
+          ./gradlew assembleDebug
+
+      - name: Copy APK to Executable Directory
+        run: |
+          mkdir -p executable
+          cp android_assistant_app/app/build/outputs/apk/debug/app-debug.apk executable/SimplifySpeak-Assistant.apk || true
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimplifySpeak-Assistant-APK
+          path: executable/*.apk
+
+      - name: Commit and Push APK to Executable Folder
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add executable/*.apk || true
+          git commit -m "chore: auto-build and update executable APK [skip ci]" || echo "No changes to commit"
+          git push || true

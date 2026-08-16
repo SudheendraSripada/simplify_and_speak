@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Simplify &amp; Speak Assistant</string>
+    <string name="assistant_service_label">Simplify &amp; Speak Voice Assistant</string>
+    <string name="accessibility_service_label">Simplify &amp; Speak Screen Overlay</string>
+    <string name="accessibility_service_description">Enables instant text selection simplification and floating audio pills across any app and browser.</string>
+</resources>
